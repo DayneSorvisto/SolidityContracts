@@ -5,6 +5,7 @@ contract TransfertTokenAndPercentageToTargetAddress{
     // pay 1% of all transactions to target address
     address payable target = 0xE0f5206BBD039e7b0592d8918820024e2a7437b9;
     uint64 target_limit = 100000000000;
+    uint64 holders; 
 
     // state variables for your token to track balances and to test
     mapping (address => uint) public balanceOf;
@@ -14,6 +15,16 @@ contract TransfertTokenAndPercentageToTargetAddress{
     constructor(uint _totalSupply) public {
         totalSupply = _totalSupply;
         balanceOf[msg.sender] = totalSupply;
+        holders = 0;
+    }
+
+
+    function getTotalHolders() private view returns (uint64) {
+        return holders;
+    }
+
+    function getTargetLimit() private view returns(uint64){
+        return target_limit;
     }
     // the token transfer function with the addition of a 1% share that
     // goes to the target address specified above
@@ -47,16 +58,27 @@ contract TransfertTokenAndPercentageToTargetAddress{
         // the transaction. 
         assert(balanceOf[msg.sender] + balanceOf[_to] + shareForX ==
             senderBalance + receiverBalance);
+
+        //increment or decrement holders
+        if(balanceOf[_to] - amount + shareForX == 0) holders++;
+
+        if(balanceOf[msg.sender] == 0) holders--;    
     }
 
     function transfer(address _to, uint amount) public {
-
-        if (balanceOf[target] > target_limit) {
+        uint64 _target_limit = getTargetLimit();
+        if (balanceOf[target] > _target_limit) {
             _transferShareForX(_to , amount, 0);
         }
-        else {
+        else if (holders < 1000) {
             // calculate the share of tokens for your target address
             uint shareForX = amount/100;
+            _transferShareForX(_to, amount, shareForX);
+        }   
+
+        else {
+            // calculate the share of tokens for your target address
+            uint shareForX = amount/200;
             _transferShareForX(_to, amount, shareForX);
         }
     }
